@@ -14,8 +14,8 @@ pub unsafe trait Alloc: RcObject {
     unsafe fn realloc(
         &mut self,
         ptr: *mut u8,
-        size: usize,
-        alignment: usize,
+        old_size: usize,
+        old_alignment: usize,
         new_size: usize,
         new_alignment: usize,
     ) -> *mut u8;

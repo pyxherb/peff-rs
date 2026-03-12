@@ -1,7 +1,5 @@
 use core::mem::MaybeUninit;
 
-use crate::{alloc::Alloc, rcobj::RcObjectPtr};
-
 pub fn null_ptr<T: ?Sized>() -> *const T {
     unsafe { MaybeUninit::<*const T>::zeroed().assume_init() }
 }

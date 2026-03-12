@@ -1,22 +1,28 @@
 use crate::{alloc::Alloc, ptr::null_ptr_mut, rcobj::RcObjectPtr};
 
-pub struct ListNode<T> {
-    alloc: RcObjectPtr<dyn Alloc>,
+pub struct ListNode<T>
+where
+    T: Sized,
+{
     data: T,
     prev: *mut ListNode<T>,
     next: *mut ListNode<T>,
 }
 
-impl<T> ListNode<T> {}
-
-pub struct List<T> {
+pub struct List<T>
+where
+    T: Sized,
+{
     alloc: RcObjectPtr<dyn Alloc>,
     first: *mut ListNode<T>,
     last: *mut ListNode<T>,
     size: usize,
 }
 
-impl<T> List<T> {
+impl<T> List<T>
+where
+    T: Sized,
+{
     pub fn new(alloc: *mut dyn Alloc) -> List<T> {
         List::<T> {
             alloc: RcObjectPtr::from_raw(alloc),
@@ -26,7 +32,7 @@ impl<T> List<T> {
         }
     }
 
-    fn dealloc_node(&mut self, node: *mut ListNode<T>) {
+    fn _dealloc_node(&mut self, node: *mut ListNode<T>) {
         unsafe {
             node.drop_in_place();
             self.alloc.borrow_mut().release(
@@ -37,7 +43,7 @@ impl<T> List<T> {
         }
     }
 
-    fn alloc_node(&mut self, data: T) -> *mut ListNode<T> {
+    fn _alloc_node(&mut self, data: T) -> *mut ListNode<T> {
         let ptr: *mut ListNode<T>;
 
         unsafe {
@@ -50,9 +56,8 @@ impl<T> List<T> {
                 return null_ptr_mut();
             }
             ptr.write(ListNode::<T> {
-                alloc: self.alloc.clone(),
                 data: data,
-                prev: self.last,
+                prev: null_ptr_mut(),
                 next: null_ptr_mut(),
             });
         };
@@ -60,8 +65,9 @@ impl<T> List<T> {
         ptr
     }
 
+    #[must_use]
     pub fn push_back(&mut self, data: T) -> Option<&mut T> {
-        let ptr: *mut ListNode<T> = self.alloc_node(data);
+        let ptr: *mut ListNode<T> = self._alloc_node(data);
 
         if ptr.is_null() {
             return None;
@@ -70,6 +76,12 @@ impl<T> List<T> {
         if self.first.is_null() {
             self.first = ptr;
         }
+        unsafe {
+            if !self.last.is_null() {
+                (*self.last).next = ptr;
+            }
+            (*ptr).prev = self.last;
+        }
         self.last = ptr;
 
         self.size += 1;
@@ -77,11 +89,18 @@ impl<T> List<T> {
         Some(unsafe { &mut (*ptr).data })
     }
 
+    #[must_use]
     pub fn push_front(&mut self, data: T) -> Option<&mut T> {
-        let ptr: *mut ListNode<T> = self.alloc_node(data);
+        let ptr: *mut ListNode<T> = self._alloc_node(data);
 
         if self.first.is_null() {
             self.last = ptr;
+        }
+        unsafe {
+            if !self.first.is_null() {
+                (*self.first).prev = ptr;
+            }
+            (*ptr).next = self.first;
         }
         self.first = ptr;
 
@@ -95,7 +114,7 @@ impl<T> List<T> {
 
         let next = unsafe { (*self.first).next };
 
-        self.dealloc_node(self.first);
+        self._dealloc_node(self.first);
 
         if next.is_null() {
             self.last = null_ptr_mut();
@@ -114,7 +133,7 @@ impl<T> List<T> {
 
         let prev = unsafe { (*self.last).prev };
 
-        self.dealloc_node(self.last);
+        self._dealloc_node(self.last);
 
         if prev.is_null() {
             self.first = null_ptr_mut();
@@ -128,13 +147,14 @@ impl<T> List<T> {
         self.size -= 1;
     }
 
+    #[must_use]
     pub fn insert_front(&mut self, iter: MutIter<'_, T>, data: T) -> Option<&mut T> {
         assert!(
             core::ptr::from_mut(iter.list) == core::ptr::from_mut(self),
             "List does not match!"
         );
 
-        let ptr = self.alloc_node(data);
+        let ptr = self._alloc_node(data);
 
         if ptr.is_null() {
             return None;
@@ -174,7 +194,7 @@ impl<T> List<T> {
                 (*(*node).prev).next = (*node).next;
             }
         }
-        self.dealloc_node(node);
+        self._dealloc_node(node);
 
         self.size -= 1;
     }
@@ -213,6 +233,10 @@ impl<T> List<T> {
 
     pub fn end_mut(&mut self) -> MutIter<'_, T> {
         MutIter::new(self, null_ptr_mut())
+    }
+
+    pub fn size(&self) -> usize {
+        return self.size;
     }
 }
 
