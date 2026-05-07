@@ -1,4 +1,5 @@
-use crate::{alloc::Alloc, ptr::null_ptr_mut, rcobj::RcObjectPtr};
+use crate::{alloc::Alloc, rcobj::RcObjectPtr};
+use core::ptr::null_mut;
 
 pub struct ListNode<T>
 where
@@ -26,8 +27,8 @@ where
     pub fn new(alloc: *mut dyn Alloc) -> List<T> {
         List::<T> {
             alloc: RcObjectPtr::from_raw(alloc),
-            first: null_ptr_mut(),
-            last: null_ptr_mut(),
+            first: null_mut(),
+            last: null_mut(),
             size: 0,
         }
     }
@@ -53,12 +54,12 @@ where
                 .alloc(size_of::<ListNode<T>>(), align_of::<ListNode<T>>())
                 as *mut ListNode<T>;
             if ptr.is_null() {
-                return null_ptr_mut();
+                return null_mut();
             }
             ptr.write(ListNode::<T> {
                 data: data,
-                prev: null_ptr_mut(),
-                next: null_ptr_mut(),
+                prev: null_mut(),
+                next: null_mut(),
             });
         };
 
@@ -117,10 +118,10 @@ where
         self._dealloc_node(self.first);
 
         if next.is_null() {
-            self.last = null_ptr_mut();
+            self.last = null_mut();
         } else {
             unsafe {
-                (*next).prev = null_ptr_mut();
+                (*next).prev = null_mut();
             }
         }
         self.first = next;
@@ -136,10 +137,10 @@ where
         self._dealloc_node(self.last);
 
         if prev.is_null() {
-            self.first = null_ptr_mut();
+            self.first = null_mut();
         } else {
             unsafe {
-                (*prev).next = null_ptr_mut();
+                (*prev).next = null_mut();
             }
         }
         self.last = prev;
@@ -228,11 +229,11 @@ where
     }
 
     pub fn end(&self) -> Iter<'_, T> {
-        Iter::new(&self, null_ptr_mut())
+        Iter::new(&self, null_mut())
     }
 
     pub fn end_mut(&mut self) -> MutIter<'_, T> {
-        MutIter::new(self, null_ptr_mut())
+        MutIter::new(self, null_mut())
     }
 
     pub fn size(&self) -> usize {
@@ -262,7 +263,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
             return None;
         }
         if self.node == self.list.last {
-            self.node = null_ptr_mut();
+            self.node = null_mut();
             return None;
         }
         let data = unsafe { Some(&(*self.node).data) };
@@ -311,7 +312,7 @@ impl<'a, T> Iterator for MutIter<'a, T> {
             return None;
         }
         if self.node == self.list.last {
-            self.node = null_ptr_mut();
+            self.node = null_mut();
             return None;
         }
         let data = unsafe { Some(&mut (*self.node).data) };

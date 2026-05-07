@@ -1,9 +1,10 @@
-use std::{
+use core::{
     ops::{Index, IndexMut},
     ptr::{copy_nonoverlapping, drop_in_place},
 };
 
-use crate::{alloc::Alloc, ptr::null_ptr_mut, rcobj::RcObjectPtr};
+use crate::{alloc::Alloc, rcobj::RcObjectPtr};
+use core::ptr::null_mut;
 
 pub struct DynArray<T>
 where
@@ -22,7 +23,7 @@ where
     pub fn new(alloc: *mut dyn Alloc) -> DynArray<T> {
         DynArray::<T> {
             alloc: RcObjectPtr::from_raw(alloc),
-            data: null_ptr_mut(),
+            data: null_mut(),
             size: 0,
             capacity: 0,
         }
@@ -91,13 +92,20 @@ where
     fn _grow_capacity(&mut self, new_capacity: usize) -> bool {
         assert!(new_capacity > self.capacity);
         unsafe {
-            let new_data = (*self.alloc.into_raw_mut()).realloc(
-                self.data as *mut u8,
-                self.capacity * size_of::<T>(),
-                align_of::<T>(),
-                new_capacity * size_of::<T>(),
-                align_of::<T>(),
-            );
+            let new_data = if self.data.is_null() {
+                (*self.alloc.into_raw_mut()).alloc(
+                    new_capacity * size_of::<T>(),
+                    align_of::<T>()
+                )
+            } else {
+                (*self.alloc.into_raw_mut()).realloc(
+                    self.data as *mut u8,
+                    self.capacity * size_of::<T>(),
+                    align_of::<T>(),
+                    new_capacity * size_of::<T>(),
+                    align_of::<T>(),
+                )
+            };
 
             if new_data.is_null() {
                 return false;

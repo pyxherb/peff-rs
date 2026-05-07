@@ -1,4 +1,5 @@
-use crate::{alloc::Alloc, ptr::null_ptr_mut, rcobj::RcObjectPtr};
+use crate::{alloc::Alloc, rcobj::RcObjectPtr};
+use core::ptr::null_mut;
 
 pub struct Box<T> {
     ptr: *mut T,
@@ -43,13 +44,13 @@ impl<T> Box<T> {
                     .borrow_mut()
                     .release(self.ptr as *mut u8, size_of::<T>(), align_of::<T>());
             };
-            self.ptr = null_ptr_mut();
+            self.ptr = null_mut();
         }
     }
 
     pub fn release(&mut self) -> *mut T {
         let tmp = self.ptr;
-        self.ptr = null_ptr_mut();
+        self.ptr = null_mut();
         tmp
     }
 }

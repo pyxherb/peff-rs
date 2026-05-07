@@ -1,4 +1,4 @@
-use crate::ptr::null_ptr_mut;
+use crate::ptr::null_ptr_mut_generic;
 
 pub trait RcObject {
     fn inc_ref(&mut self);
@@ -49,13 +49,13 @@ where
             unsafe {
                 (*self.ptr).dec_ref();
             };
-            self.ptr = null_ptr_mut();
+            self.ptr = null_ptr_mut_generic();
         }
     }
 
     pub fn release(&mut self) -> *mut T {
         let tmp = self.ptr;
-        self.ptr = null_ptr_mut();
+        self.ptr = null_ptr_mut_generic();
         tmp
     }
 }

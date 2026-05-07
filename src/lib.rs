@@ -7,18 +7,24 @@ pub mod list;
 pub mod misc;
 pub mod ptr;
 pub mod rcobj;
+pub mod scope_guard;
 
 #[cfg(test)]
 mod tests {
-    use crate::{alloc::StdAlloc, dynarray::DynArray, list::List};
+    use crate::{
+        alloc::{LDAlloc, StdAlloc},
+        dynarray::DynArray,
+        list::List,
+    };
 
     #[test]
     fn it_works() {
         let mut allocator = StdAlloc::new();
+        let mut ld_allocator = LDAlloc::new(&mut allocator);
 
         println!("List test:");
         {
-            let mut ls = List::<i32>::new(allocator.into_ptr_mut());
+            let mut ls = List::<i32>::new(ld_allocator.into_ptr_mut());
 
             for i in 1..100 {
                 if ls.push_back(i).is_none() {
@@ -39,7 +45,7 @@ mod tests {
 
         println!("Vec test:");
         {
-            let mut a = DynArray::<i32>::new(allocator.into_ptr_mut());
+            let mut a = DynArray::<i32>::new(ld_allocator.into_ptr_mut());
 
             for i in 1..100 {
                 if a.push_back(i).is_none() {
@@ -63,5 +69,7 @@ mod tests {
                 println!("{}", i);
             }
         }
+
+        ld_allocator.dump_allocated_blocks();
     }
 }
