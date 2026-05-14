@@ -1,4 +1,4 @@
-use crate::{alloc::Alloc, rcobj::RcObjectPtr};
+use crate::base::{alloc::Alloc, rcobj::RcObjectPtr};
 use core::ptr::null_mut;
 
 pub struct Box<T> {
@@ -40,9 +40,11 @@ impl<T> Box<T> {
         if !self.ptr.is_null() {
             unsafe {
                 self.ptr.drop_in_place();
-                self.alloc
-                    .borrow_mut()
-                    .release(self.ptr as *mut u8, size_of::<T>(), align_of::<T>());
+                self.alloc.borrow_mut().release(
+                    self.ptr as *mut u8,
+                    size_of::<T>(),
+                    align_of::<T>(),
+                );
             };
             self.ptr = null_mut();
         }

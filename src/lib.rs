@@ -1,21 +1,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod alloc;
-pub mod boxing;
-pub mod dynarray;
-pub mod list;
-pub mod misc;
-pub mod ptr;
-pub mod rcobj;
-pub mod scope_guard;
+pub mod base;
+pub mod containers;
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        alloc::{LDAlloc, StdAlloc},
-        dynarray::DynArray,
-        list::List,
-    };
+    use crate::base::alloc::{LDAlloc, StdAlloc};
+    use crate::containers::{dynarray::DynArray, list::List};
 
     #[test]
     fn it_works() {

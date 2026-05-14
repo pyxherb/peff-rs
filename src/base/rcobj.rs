@@ -1,4 +1,4 @@
-use crate::ptr::null_ptr_mut_generic;
+use crate::base::ptr::null_ptr_mut_generic;
 
 pub trait RcObject {
     fn inc_ref(&mut self);

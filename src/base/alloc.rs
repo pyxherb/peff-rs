@@ -5,8 +5,8 @@ use std::{
 use core::ptr::copy_nonoverlapping;
 
 use crate::{
-    rcobj::{RcObject, RcObjectPtr},
-    scope_guard::ScopeGuard,
+    base::rcobj::{RcObject, RcObjectPtr},
+    base::scope_guard::ScopeGuard,
 };
 
 use core::ptr::null_mut;
