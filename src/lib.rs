@@ -24,7 +24,7 @@ mod tests {
 
         println!("List test:");
         {
-            let mut ls = List::<i32>::new(ld_allocator.into_ptr_mut());
+            let mut ls = List::<i32>::new(allocator.into_ptr_mut());
 
             for i in 1..100 {
                 if ls.push_back(i).is_none() {
@@ -45,7 +45,7 @@ mod tests {
 
         println!("Vec test:");
         {
-            let mut a = DynArray::<i32>::new(ld_allocator.into_ptr_mut());
+            let mut a = DynArray::<i32>::new(allocator.into_ptr_mut());
 
             for i in 1..100 {
                 if a.push_back(i).is_none() {
@@ -70,6 +70,6 @@ mod tests {
             }
         }
 
-        ld_allocator.dump_allocated_blocks();
+        // allocator.dump_allocated_blocks();
     }
 }

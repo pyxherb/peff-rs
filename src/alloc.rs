@@ -1,6 +1,5 @@
 use std::{
-    alloc::{GlobalAlloc, Layout},
-    ptr::copy,
+    alloc::{GlobalAlloc, Layout}, ptr::copy
 };
 
 use core::ptr::copy_nonoverlapping;
@@ -79,7 +78,7 @@ unsafe impl Alloc for StdAlloc {
         new_size: usize,
         new_alignment: usize,
     ) -> *mut u8 {
-        assert!(ptr.is_null(), "Trying realloc with null pointer");
+        assert!(!ptr.is_null(), "Trying realloc with null pointer");
 
         if alignment == new_alignment {
             unsafe {
@@ -214,6 +213,11 @@ unsafe impl Alloc for LDAlloc {
             }
             record_ptr.write(record);
         }
+        if !self.alloc_records.is_null() {
+            unsafe {
+                (*self.alloc_records).prev = record_ptr;
+            }
+        }
         self.alloc_records = record_ptr;
 
         let canary_ptr_in_blk = blk.wrapping_add(size) as *mut usize;
@@ -221,14 +225,12 @@ unsafe impl Alloc for LDAlloc {
             blk.wrapping_add(size + size_of::<usize>()) as *mut *mut LDAllocRecord;
 
         unsafe {
-            canary_ptr_in_blk.write_unaligned((record_ptr as usize) ^ (blk as usize));
+            canary_ptr_in_blk.write_unaligned((blk as usize) ^ (record_ptr as usize));
             record_ptr_in_blk.write_unaligned(record_ptr);
         };
 
-        if !self.alloc_records.is_null() {
-            unsafe {
-                (*self.alloc_records).prev = record_ptr;
-            }
+        if (blk as usize) ^ (record_ptr as usize) == 1858626043582usize {
+            println!("Test");
         }
 
         release_blk_guard.release();
@@ -240,13 +242,9 @@ unsafe impl Alloc for LDAlloc {
             panic!("Releasing a null block");
         }
         let record_ptr = unsafe {
-            (ptr.add(size + size_of::<usize>()) as *mut *mut LDAllocRecord).read_unaligned()
+            (ptr.wrapping_add(size + size_of::<usize>()) as *mut *mut LDAllocRecord).read_unaligned()
         };
-        let canary = unsafe { (ptr.add(size) as *mut usize).read_unaligned() };
-
-        if ((ptr as usize) ^ (record_ptr as usize)) != canary {
-            panic!("Block at {:?} damaged", ptr);
-        }
+        let canary = unsafe { (ptr.wrapping_add(size) as *mut usize).read_unaligned() };
 
         unsafe {
             if (*record_ptr).ptr != ptr {
@@ -262,6 +260,10 @@ unsafe impl Alloc for LDAlloc {
                     size,
                     (*record_ptr).size
                 );
+            }
+
+            if (((*record_ptr).ptr as usize) ^ (record_ptr as usize)) != canary {
+                panic!("Block at {:?} damaged", ptr);
             }
 
             if self.alloc_records == record_ptr {

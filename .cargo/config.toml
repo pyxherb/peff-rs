@@ -1,0 +1,3 @@
+[build]
+rustflags = ["-Z", "sanitizer=address"]
+rustdocflags = ["-Z", "sanitizer=address"]

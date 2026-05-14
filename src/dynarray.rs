@@ -142,18 +142,8 @@ where
     }
 
     unsafe fn _move_data(new_data: *mut T, old_data: *mut T, size: usize) {
-        if new_data.wrapping_add(size) <= old_data {
-            unsafe {
-                for i in 0..size + 1 {
-                    (*new_data.wrapping_add(i)) = std::ptr::read(old_data.wrapping_add(i));
-                }
-            }
-        } else {
-            unsafe {
-                for i in size..0 {
-                    (*new_data.wrapping_add(i - 1)) = std::ptr::read(old_data.wrapping_add(i - 1));
-                }
-            }
+        unsafe {
+            std::ptr::copy(old_data, new_data, size);
         }
     }
 
@@ -246,6 +236,7 @@ where
 
     #[must_use]
     pub fn insert(&mut self, index: usize, data: T) -> Option<&mut T> {
+        let old_size = self.size;
         let new_size = self.size + 1;
         if !self._auto_grow(new_size) {
             return None;
@@ -254,7 +245,7 @@ where
             Self::_move_data_uninit(
                 self.data.wrapping_add(index + 1),
                 self.data.wrapping_add(index),
-                self.size - index,
+                old_size - index,
             );
         }
         self[index] = data;
@@ -323,6 +314,7 @@ impl<T> Index<usize> for DynArray<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &T {
+        assert!(index < self.size);
         unsafe { self.data.wrapping_add(index).as_ref().unwrap() }
     }
 }
@@ -359,8 +351,9 @@ impl<'a, T> Iterator for Iter<'a, T> {
         if self.index >= self.vec.size() {
             return None;
         }
+        let result = Some(&self.vec[self.index]);
         self.index += 1;
-        Some(&self.vec[self.index])
+        result
     }
 }
 
